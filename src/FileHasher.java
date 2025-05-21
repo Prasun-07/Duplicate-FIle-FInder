@@ -1,7 +1,14 @@
 import javax.swing.*;
+import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
-import java.io.File;
-import java.awt.*;
+import java.io.*;
+import java.nio.file.Files;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
 
 public class FileHasher extends JFrame{
     private File selectedFolder;
@@ -45,8 +52,70 @@ public class FileHasher extends JFrame{
             scanButton.setEnabled(true);                                            //enables the scanning button
         }
     }
-
     private void onScanClicked(ActionEvent e){
 
+        //DO not proceed until a folder is select
+        if(selectedFolder == null){
+            JOptionPane.showMessageDialog(this,"Select a Folder");      //if no folder is selected
+            return;
+        }
+
+        //Creating map to hash the folders
+        Map<String, List<File>> duplicateFiles = findDuplicateFiles(selectedFolder);
+
+        System.out.println("\nDuplicate Files: ");
+
+        int count=1;
+        for(Map.Entry<String, List<File>> entry : duplicateFiles.entrySet()){               //iterating over each group of file with the same hash
+            List<File> files = entry.getValue();
+            if(files.size() > 1){
+                System.out.println("Group "+count+": ");
+                for(File file : files)  System.out.println(" "+file.getAbsolutePath());     //if group has more than one file (from for loop), we print it as a duplicate file
+                count++;
+            }
+        }
+        if(count == 1){
+            System.out.println("No Duplicates Found");
+        }
+    }
+
+    private Map<String, List<File>> findDuplicateFiles(File folder){
+        Map<String, List<File>> hashToFileList = new HashMap<>();
+
+        try{
+            Files.walk(folder.toPath())
+                    .filter(Files::isRegularFile)
+                    .forEach(path -> {
+                        try{
+                            String hash = getFileHash(path.toFile());
+                            hashToFileList
+                                    .computeIfAbsent(hash, k -> new ArrayList<>())
+                                    .add(path.toFile());
+                        }catch(IOException | NoSuchAlgorithmException ex){
+                            ex.printStackTrace();
+                        }
+                    });
+        }catch(IOException e){
+            e.printStackTrace();
+        }
+
+        return hashToFileList;
+    }
+
+    private String getFileHash(File file) throws IOException, NoSuchAlgorithmException{
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        try(InputStream ipstream = new FileInputStream(file)){
+            byte[] buffer = new byte[4096];
+            int byteRead = ipstream.read(buffer);
+            while(byteRead != -1){
+                digest.update(buffer, 0, byteRead);
+            }
+        }
+        byte[] hashByte = digest.digest();
+        StringBuilder sb = new StringBuilder();
+        for(byte b : hashByte){
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
     }
 }

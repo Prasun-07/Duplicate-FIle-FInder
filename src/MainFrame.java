@@ -22,6 +22,7 @@ public class MainFrame extends JFrame {
     private JButton scanButton;
     private JTable table;
     private DefaultTableModel tableModel;
+    private JButton deleteButton;
     public MainFrame() {
         //setting the layout
         setTitle("Duplicate FIle Finder");
@@ -53,9 +54,10 @@ public class MainFrame extends JFrame {
         buttonPanel.add(scanButton);
         add(buttonPanel, BorderLayout.SOUTH);
 
-        JButton deleteButton = new JButton("Delete Selected");
+        deleteButton = new JButton("Delete Selected");
         deleteButton.addActionListener(this::onDeleteClicked);
         buttonPanel.add(deleteButton);
+        deleteButton.setEnabled(false);
 
 
         //Inititalizing the table to show the duplicate files
@@ -104,6 +106,7 @@ public class MainFrame extends JFrame {
 
         tableModel.setRowCount(0); // Clear previous results
         scanButton.setEnabled(false); // Prevent multiple scans
+        deleteButton.setEnabled(true);
 
         // Run scan in background
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
@@ -121,20 +124,18 @@ public class MainFrame extends JFrame {
                         count++;
                     }
                 }
-
                 if (count == 1) {
                     JOptionPane.showMessageDialog(MainFrame.this, "No Duplicates Found");
                 }
                 return null;
             }
-
             @Override
             protected void done() {
                 scanButton.setEnabled(true); // Re-enable after scan
             }
         };
 
-        worker.execute(); // Start background thread
+        worker.execute(); // Start thread  in background
     }
     private Map<String, List<File>> findDuplicateFiles(File folder) {
         Map<String, List<File>> hashToFileList = new HashMap<>();

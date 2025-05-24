@@ -53,10 +53,24 @@ public class MainFrame extends JFrame {
         buttonPanel.add(scanButton);
         add(buttonPanel, BorderLayout.SOUTH);
 
+        JButton deleteButton = new JButton("Delete Selected");
+        deleteButton.addActionListener(this::onDeleteClicked);
+        buttonPanel.add(deleteButton);
+
+
         //Inititalizing the table to show the duplicate files
-        String[] columnNames = {"Group", "File Path"};                      //creating colums for the table
+        String[] columnNames = {"Delete?", "Group", "File Path"};                      //creating colums for the table, adding delete option
         tableModel = new DefaultTableModel(columnNames, 0);
-        table = new JTable(tableModel);
+        table = new JTable(tableModel){
+            @Override
+            public Class<?> getColumnClass(int column) {
+                return column == 0 ? Boolean.class : String.class;
+            }
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 0;                                     //only lets edit checkbox for column
+            }
+        };
 
         JPanel centerPanel = new JPanel(new BorderLayout());
         centerPanel.add(selectedPathLabel, BorderLayout.NORTH);
@@ -82,37 +96,6 @@ public class MainFrame extends JFrame {
             scanButton.setEnabled(true);                                            //enables the scanning button
         }
     }
-
-    /*private void onScanClicked(ActionEvent e){
-
-        //DO not proceed until a folder is select
-        if(selectedFolder == null){
-            JOptionPane.showMessageDialog(this,"Select a Folder");      //if no folder is selected
-            return;
-        }
-
-        tableModel.setRowCount(0);                                                            //clears table for a new scanning
-
-        //Creating map to hash the folders
-        Map<String, java.util.List<File>> duplicateFiles = findDuplicateFiles(selectedFolder);
-
-        System.out.println("\nDuplicate Files: ");
-
-        int count=1;
-        for(Map.Entry<String, java.util.List<File>> entry : duplicateFiles.entrySet()){               //iterating over each group of file with the same hash
-            List<File> files = entry.getValue();
-            if(files.size() > 1){
-                for(File file : files) {
-                    tableModel.addRow(new Object[]{"Group" + count, file.getAbsolutePath()});     //if group has more than one file (from for loop), we print it as a duplicate file
-                }
-                count++;
-            }
-        }
-        if(count == 1){
-            JOptionPane.showMessageDialog(this, "No Duplicates Found");
-        }
-    }*/
-
     private void onScanClicked(ActionEvent e) {
         if (selectedFolder == null) {
             JOptionPane.showMessageDialog(this, "Select a Folder");
@@ -133,7 +116,7 @@ public class MainFrame extends JFrame {
                     List<File> files = entry.getValue();
                     if (files.size() > 1) {
                         for (File file : files) {
-                            tableModel.addRow(new Object[]{"Group " + count, file.getAbsolutePath()});
+                            tableModel.addRow(new Object[]{false, "Group " + count, file.getAbsolutePath()});
                         }
                         count++;
                     }
@@ -153,33 +136,6 @@ public class MainFrame extends JFrame {
 
         worker.execute(); // Start background thread
     }
-
-
-    /*private Map<String, List<File>> findDuplicateFiles(File folder){
-        Map<String, List<File>> hashToFileList = new HashMap<>();
-
-        try{
-            Files.walk(folder.toPath())
-                    .filter(Files::isRegularFile)
-                    .filter(path -> Files.isReadable(path))
-                    .filter(path -> !path.toString().contains("$RECYCLE.BIN"))
-                    .forEach(path -> {
-                        try{
-                            String hash = getFileHash(path.toFile());
-                            hashToFileList
-                                    .computeIfAbsent(hash, k -> new ArrayList<>())
-                                    .add(path.toFile());
-                        }catch(IOException | NoSuchAlgorithmException ex){
-                            System.err.println("Failed to hash file: " + path + " (" + ex.getMessage() + ")");
-                        }
-                    });
-        }catch(IOException e){
-            e.printStackTrace();
-        }
-
-        return hashToFileList;
-    }*/
-
     private Map<String, List<File>> findDuplicateFiles(File folder) {
         Map<String, List<File>> hashToFileList = new HashMap<>();
 
@@ -228,8 +184,6 @@ public class MainFrame extends JFrame {
 
         return hashToFileList;
     }
-
-
     private String getFileHash(File file) throws IOException, NoSuchAlgorithmException{
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         try(InputStream ipstream = new FileInputStream(file)){
@@ -245,5 +199,40 @@ public class MainFrame extends JFrame {
             sb.append(String.format("%02x", b));
         }
         return sb.toString();
+    }
+
+
+    private void onDeleteClicked(ActionEvent e) {
+        int rowCount = tableModel.getRowCount();
+        List<Integer> rowsToRemove = new ArrayList<>();
+        int deletedCount = 0;
+
+        for (int i = 0; i < rowCount; i++) {
+            Boolean toDelete = (Boolean) tableModel.getValueAt(i, 0);
+            if (Boolean.TRUE.equals(toDelete)) {
+                String path = (String) tableModel.getValueAt(i, 2);
+                File file = new File(path);
+
+                int confirm = JOptionPane.showConfirmDialog(this,
+                        "Are you sure you want to delete this file?\n" + path,
+                        "Confirm Delete",
+                        JOptionPane.YES_NO_OPTION);
+
+                if (confirm == JOptionPane.YES_OPTION && file.delete()) {
+                    rowsToRemove.add(i);
+                    deletedCount++;
+                } else if (!file.exists()) {
+                    JOptionPane.showMessageDialog(this, "File already deleted: " + path);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Failed to delete: " + path);
+                }
+            }
+        }
+
+        for (int i = rowsToRemove.size() - 1; i >= 0; i--) {
+            tableModel.removeRow(rowsToRemove.get(i));
+        }
+
+        JOptionPane.showMessageDialog(this, "Deleted " + deletedCount + " files.");
     }
 }

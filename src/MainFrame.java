@@ -55,22 +55,24 @@ public class MainFrame extends JFrame {                 //extends JFrame makes t
         //browsing button adding
         JButton browseButton = new JButton("Browse Files");
         browseButton.addActionListener(this::onBrowseClicked);              //when button is clicked, it will render the onBrowseCLicked() function
-        buttonPanel.add(browseButton);
+        buttonPanel.add(browseButton);                                      //adds the browseButton to the buttonPanel
 
+        //adding scan button
         scanButton = new JButton("Scan for duplicates");
         scanButton.setEnabled(false);                                       //keeps the button disabled until user selects a folder
-        scanButton.addActionListener(this::onScanClicked);              //when button is clicked, it will render the onBrowseCLicked() function
-        buttonPanel.add(scanButton);
-        add(buttonPanel, BorderLayout.SOUTH);
+        scanButton.addActionListener(this::onScanClicked);                  //when button is clicked, it will render the onBrowseCLicked() function
+        buttonPanel.add(scanButton);                                        //adds scanButton to the buttonPanel
 
+        //adding delete button
         deleteButton = new JButton("Delete Selected");
         deleteButton.addActionListener(this::onDeleteClicked);
-        buttonPanel.add(deleteButton);
-        deleteButton.setEnabled(false);
+        deleteButton.setEnabled(false);                                     //disabled until scanned
+        buttonPanel.add(deleteButton);                                      //adds deleteButton to buttonpanel
 
+        add(buttonPanel, BorderLayout.SOUTH);                               //adds the button panel to the south of the layout (bottom)
 
         //Inititalizing the table to show the duplicate files
-        String[] columnNames = {"Delete?", "Group", "File Path"};                      //creating colums for the table, adding delete option
+        String[] columnNames = {"Delete?", "Group", "File Path"};           //creating 3 colums for the table
         tableModel = new DefaultTableModel(columnNames, 0);
         table = new JTable(tableModel){
             @Override
@@ -83,6 +85,7 @@ public class MainFrame extends JFrame {                 //extends JFrame makes t
             }
         };
 
+        //adding a label & scrollable table int the center
         JPanel centerPanel = new JPanel(new BorderLayout());
         centerPanel.add(selectedPathLabel, BorderLayout.NORTH);
         centerPanel.add(new JScrollPane(table), BorderLayout.CENTER);
@@ -97,27 +100,27 @@ public class MainFrame extends JFrame {                 //extends JFrame makes t
     private void onBrowseClicked(ActionEvent e){
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle("Select Folder");
-        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        chooser.setAcceptAllFileFilterUsed(false);
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);                    //users can select only directories (folders only)
+        chooser.setAcceptAllFileFilterUsed(false);                                      //prevents selecting all folders
 
         int result = chooser.showOpenDialog(this);
         if(result == JFileChooser.APPROVE_OPTION){
             selectedFolder = chooser.getSelectedFile();
             selectedPathLabel.setText("Selected: "+selectedFolder.getAbsolutePath());
-            scanButton.setEnabled(true);                                            //enables the scanning button
+            scanButton.setEnabled(true);                                                //enables the scanning button
         }
     }
     private void onScanClicked(ActionEvent e) {
-        if (selectedFolder == null) {
+        if (selectedFolder == null) {                                                           //if scan is triggered with no folder
             JOptionPane.showMessageDialog(this, "Select a Folder");
             return;
         }
 
-        tableModel.setRowCount(0); // Clear previous results
-        scanButton.setEnabled(false); // Prevent multiple scans
-        deleteButton.setEnabled(true);
+        tableModel.setRowCount(0);                                                              //clears previous data
+        scanButton.setEnabled(false);                                                           //prevents multiple scans
+        deleteButton.setEnabled(true);                                                          //delete button is enabled
 
-        // Run scan in background
+        // Run scan in background (avoids freezing the GPU)
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
             @Override
             protected Void doInBackground() {
@@ -140,19 +143,20 @@ public class MainFrame extends JFrame {                 //extends JFrame makes t
             }
             @Override
             protected void done() {
-                scanButton.setEnabled(true); // Re-enable after scan
+                scanButton.setEnabled(true);                                                        //After scanning is finished, re-enaable the scan button
             }
         };
 
         worker.execute(); // Start thread  in background
     }
     private Map<String, List<File>> findDuplicateFiles(File folder) {
-        Map<String, List<File>> hashToFileList = new HashMap<>();
+
+        Map<String, List<File>> hashToFileList = new HashMap<>();                                   //uses the hash as key to group files by identical data
 
         try {
-            Files.walkFileTree(folder.toPath(), new SimpleFileVisitor<>() {
+            Files.walkFileTree(folder.toPath(), new SimpleFileVisitor<>() {                         //traverses all files and folders
                 @Override
-                public FileVisitResult preVisitDirectory(java.nio.file.Path dir, BasicFileAttributes attrs) {
+                public FileVisitResult preVisitDirectory(java.nio.file.Path dir, BasicFileAttributes attrs) {       //skips system folders
                     String name = dir.toString().toLowerCase();
                     if (name.contains("$recycle.bin") ||
                             name.contains("system volume information") ||
@@ -168,7 +172,7 @@ public class MainFrame extends JFrame {                 //extends JFrame makes t
 
                 @Override
                 public FileVisitResult visitFile(java.nio.file.Path path, BasicFileAttributes attrs) {
-                    if (Files.isRegularFile(path) && Files.isReadable(path)) {
+                    if (Files.isRegularFile(path) && Files.isReadable(path)) {                              //if file is readable, compute its hash and groups it int tthe map
                         try {
                             File file = path.toFile();
                             String hash = getFileHash(file);

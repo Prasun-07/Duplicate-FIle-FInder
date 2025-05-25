@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.formdev.flatlaf.FlatLightLaf;                //flatlaf for UI
 public class MainFrame extends JFrame {
     private File selectedFolder;
     private JLabel selectedPathLabel;
@@ -24,6 +25,14 @@ public class MainFrame extends JFrame {
     private DefaultTableModel tableModel;
     private JButton deleteButton;
     public MainFrame() {
+
+        try {
+            UIManager.setLookAndFeel(new FlatLightLaf()); // Set theme here
+        } catch (Exception ex) {
+            System.err.println("Failed to initialize FlatLaf");
+        }
+        UIManager.put("defaultFont", new Font("Segoe UI", Font.PLAIN, 14));
+
         //setting the layout
         setTitle("Duplicate FIle Finder");
         setDefaultCloseOperation(EXIT_ON_CLOSE);                            //we set the default operation onclcicking close
@@ -37,6 +46,8 @@ public class MainFrame extends JFrame {
 
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout());
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
 
         //shows the selected folder path (initially no path selected)
         selectedPathLabel= new JLabel("No File Selected");

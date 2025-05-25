@@ -1,23 +1,23 @@
-import javax.swing.*;
+import javax.swing.*;                                   //import the core Swing comp. (table, button, JFrame etc.)
 import javax.swing.table.DefaultTableModel;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.awt.*;                                      //imports awt layout
+import java.awt.event.ActionEvent;                      //imports event-handling classes
+import java.io.File;                                    //for file handling
+import java.io.FileInputStream;                         //and
+import java.io.IOException;                             //reading file content
+import java.io.InputStream;                             //in streams
+import java.nio.file.FileVisitResult;                   //walk through directory trees recursively
+import java.nio.file.Files;                             //tree recursively
+import java.nio.file.SimpleFileVisitor;                 //and handle
+import java.nio.file.attribute.BasicFileAttributes;     //file metadata
+import java.security.MessageDigest;                     //computes cryptographic (coded) hash value
+import java.security.NoSuchAlgorithmException;          //for file contents
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.formdev.flatlaf.FlatLightLaf;                //flatlaf for UI
-public class MainFrame extends JFrame {
+public class MainFrame extends JFrame {                 //extends JFrame makes the things appear as a window
     private File selectedFolder;
     private JLabel selectedPathLabel;
     private JButton scanButton;
@@ -25,34 +25,32 @@ public class MainFrame extends JFrame {
     private DefaultTableModel tableModel;
     private JButton deleteButton;
     public MainFrame() {
-
         try {
-            UIManager.setLookAndFeel(new FlatLightLaf()); // Set theme here
+            UIManager.setLookAndFeel(new FlatLightLaf());                                 // Set theme here
         } catch (Exception ex) {
             System.err.println("Failed to initialize FlatLaf");
         }
-        UIManager.put("defaultFont", new Font("Segoe UI", Font.PLAIN, 14));
+        UIManager.put("defaultFont", new Font("Segoe UI", Font.PLAIN, 14));     //setting default font
 
-        //setting the layout
-        setTitle("Duplicate FIle Finder");
-        setDefaultCloseOperation(EXIT_ON_CLOSE);                            //we set the default operation onclcicking close
+        //setting the basic layout
+        setTitle("Duplicate FIle Finder");                                  //window title
+        setDefaultCloseOperation(EXIT_ON_CLOSE);                            //we set the default operation on clcicking close
         setSize(500, 500);
         setLayout(new BorderLayout());                                      //borderlayout function (start(NORTH), end(SOUTH), left, right, center)
 
         //label to show path at the top of the window
-        JLabel titleLabel = new JLabel("Select the file");              //creates the label
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);           //aligns the label in the center
-        add(titleLabel, BorderLayout.NORTH);                                //we place this label to the top(north) section of the window
+        JLabel titleLabel = new JLabel("Select the file");               //creates the label
+        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);            //aligns the label in the center
+        add(titleLabel, BorderLayout.NORTH);                                 //we place this label to the top(north) section of the window
 
+        //we create a bottom panel for all the buttons
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout());
-        buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));     //set border widths
 
         //shows the selected folder path (initially no path selected)
         selectedPathLabel= new JLabel("No File Selected");
         selectedPathLabel.setHorizontalAlignment((SwingConstants.CENTER));
-        //add(selectedPathLabel, BorderLayout.CENTER);                        //we place this label to the top(north) section of the window
 
         //browsing button adding
         JButton browseButton = new JButton("Browse Files");
